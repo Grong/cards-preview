@@ -120,7 +120,7 @@
   ];
 
   var all = [];
-  /* 首版只启用 ACTIVE_REGIONS 里的地区（默认 4 个 × 9 = 36，上线分母锁在 config.POOL_SIZE）；
+  /* 首版只启用 ACTIVE_REGIONS 里的地区（默认 4 个 × 9 = 36，本季分母锁在 config.SEASON_1_SIZE）；
    * 其余地区的数据留在 ALL_REGIONS 里，扩地区时改 config 一处即可。 */
   var activeIds = (LC.Config.ACTIVE_REGIONS && LC.Config.ACTIVE_REGIONS.length)
     ? LC.Config.ACTIVE_REGIONS : null;
@@ -129,9 +129,10 @@
     : REGIONS;
   activeRegions.forEach(function (r) { r.cards.forEach(function (c) { c.region = r.id; all.push(c); }); });
 
-  // 每地区满编 9 张；上线分母硬锁 config.POOL_SIZE（36），不随当前池内卡数变。
+  // 每地区满编 9 张；本季分母只认 config.SEASON_1_SIZE（36），不随当前池内卡数变。
   var REGION_TARGET = 9;
-  var POOL_TARGET = LC.Config.POOL_SIZE;
+  var SEASON_1_SIZE = LC.Config.SEASON_1_SIZE;
+  var POOL_TARGET = SEASON_1_SIZE;
   var MIX = LC.Config.REGION_MIX;
   // 锁定的档位分母：普通 / 稀有 / 传说各多少张（4 地区 → 24 / 8 / 4）
   var TIER_TARGET = {
@@ -139,9 +140,9 @@
     rare: activeRegions.length * MIX.rare,
     legend: activeRegions.length * MIX.legend
   };
-  if (activeRegions.length * REGION_TARGET !== POOL_TARGET && typeof console !== 'undefined') {
+  if (activeRegions.length * REGION_TARGET !== SEASON_1_SIZE && typeof console !== 'undefined') {
     console.warn('[cards] 启用地区 ' + activeRegions.length + ' 个 × ' + REGION_TARGET +
-      ' ≠ 上线分母 ' + POOL_TARGET + '：降级或扩池要连 config 一起改，release-check 会失败。');
+      ' ≠ 本季分母 ' + SEASON_1_SIZE + '：降级或扩池要连 config 一起改，release-check 会失败。');
   }
   if (MIX.common + MIX.rare + MIX.legend !== REGION_TARGET && typeof console !== 'undefined') {
     console.warn('[cards] REGION_MIX 合计 ' + (MIX.common + MIX.rare + MIX.legend) +
@@ -159,9 +160,10 @@
   LC.AllRegions = REGIONS;      // 全部已写数据的地区（含待上线的）
   LC.Regions = activeRegions;   // 首版启用的地区
   LC.Cards = all;               // 可抽池（不含棱彩）
+  LC.ExtraCards = [];           // 扩展分区：扩池新卡放这里，不进本季分母（有卡再做 UI）
   LC.PrismCards = PRISM;        // 成就限定
   LC.AllCards = all.concat(PRISM);
   LC.REGION_TARGET = REGION_TARGET;  // 每地区满编 9 张
-  LC.POOL_TARGET = POOL_TARGET;      // 上线分母（硬锁，config.POOL_SIZE）
+  LC.POOL_TARGET = POOL_TARGET;      // 本季分母（只认 config.SEASON_1_SIZE）
   LC.TIER_TARGET = TIER_TARGET;      // 各档锁定分母：普通/稀有/传说
 })(typeof window !== 'undefined' ? window : globalThis);

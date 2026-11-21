@@ -147,7 +147,8 @@
     var total = LC.POOL_TARGET;            // 分母硬锁 36，不随池内卡数变（进度不倒退）
     var ownedTotal = 0;
     LC.Cards.forEach(function (c) { if (state.owned[c.id]) ownedTotal++; });
-    el.dexCount.textContent = '已收集 ' + ownedTotal + ' / ' + total;
+    el.dexCount.textContent = '本季已收集 ' + ownedTotal + ' / ' + total +
+      (LC.ExtraCards.length ? ' · 扩展 +' + LC.ExtraCards.length : '');
 
     var counts = {};
     LC.Cards.forEach(function (c) { if (state.owned[c.id]) counts[c.rarity] = (counts[c.rarity] || 0) + 1; });

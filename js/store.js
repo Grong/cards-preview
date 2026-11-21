@@ -73,7 +73,10 @@
       rarePity: 0,
       legendPity: 0,
       draws: 0,
-      dailyGranted: cfg.ECONOMY.startTickets, // 初始赠送计入当天已发
+      // 每日发放拆三个数：自然 77 + 任务 13 = 合计 90（初始赠送计入自然）
+      dailyGranted: cfg.ECONOMY.startTickets,
+      naturalGranted: cfg.ECONOMY.startTickets,
+      taskGranted: 0,
       dailyDrawn: 0,
       dayKey: dayKey(now),
       seed: cfg.DRAW_SEED >>> 0,
@@ -85,6 +88,30 @@
   function intOr(x, d) {
     var n = Math.floor(Number(x));
     return isFinite(n) && n >= 0 ? n : d;
+  }
+
+  // 今日发放三个数的校验/迁移；reset=true 表示正常跨天清零
+  function normDaily(s, raw, reset) {
+    var eco = cfg.ECONOMY;
+    if (reset) {
+      s.dailyGranted = 0;
+      s.naturalGranted = 0;
+      s.taskGranted = 0;
+      return;
+    }
+    var total = Math.min(eco.dailyCap, intOr(raw.dailyGranted, 0));
+    var nat, task;
+    if (raw.naturalGranted != null || raw.taskGranted != null) {
+      nat = Math.min(eco.naturalDailyCap, intOr(raw.naturalGranted, total));
+      task = Math.min(eco.taskDailyCap, intOr(raw.taskGranted, 0));
+    } else {
+      // 旧档只有 dailyGranted（任务还没上线）：全算自然恢复
+      nat = Math.min(eco.naturalDailyCap, total);
+      task = Math.min(eco.taskDailyCap, total - nat);
+    }
+    s.naturalGranted = nat;
+    s.taskGranted = task;
+    s.dailyGranted = Math.min(eco.dailyCap, nat + task);
   }
 
   // 任何来源的存档都先过一遍校验，坏字段回落到默认值
@@ -106,16 +133,16 @@
     if (typeof raw.dayKey === 'string' && raw.dayKey > today) {
       // 存档日期在未来（用户把时间调回去过）：保留，不重置，防回拨刷次数
       s.dayKey = raw.dayKey;
-      s.dailyGranted = Math.min(cfg.ECONOMY.dailyCap, intOr(raw.dailyGranted, 0));
+      normDaily(s, raw, false);
       s.dailyDrawn = intOr(raw.dailyDrawn, 0);
     } else if (raw.dayKey === today) {
       s.dayKey = today;
-      s.dailyGranted = Math.min(cfg.ECONOMY.dailyCap, intOr(raw.dailyGranted, 0));
+      normDaily(s, raw, false);
       s.dailyDrawn = intOr(raw.dailyDrawn, 0);
     } else {
       // 正常跨天：今日已发/已抽清零
       s.dayKey = today;
-      s.dailyGranted = 0;
+      normDaily(s, raw, true);
       s.dailyDrawn = 0;
     }
 
@@ -154,7 +181,8 @@
   /* 按时间补抽（用 lastTickAt 时间戳算差值，不靠 setInterval 累加）：
    *   - 每 minutesPerTicket 分钟 +1
    *   - 未领取存量封顶 maxBanked（抽掉会恢复）
-   *   - 每天合计发放封顶 dailyCap（自然 + 任务共用；消耗不减）
+   *   - 自然恢复每天封顶 naturalDailyCap（77），不占任务额度；
+   *     合计不超过 dailyCap（90）
    *   - 日期回拨不触发重置；时间倒退只把基准挪到现在
    *   - 返回 true 表示状态变了（含跨天重置），调用方该存一次
    */
@@ -170,6 +198,8 @@
         // 正常跨天：重置今日计数（日期回拨不重置）
         state.dayKey = today;
         state.dailyGranted = 0;
+        state.naturalGranted = 0;
+        state.taskGranted = 0;
         state.dailyDrawn = 0;
         changed = true;
       } else if (!state.dayKey) {
@@ -193,19 +223,39 @@
     if (units <= 0) return changed;
 
     var room = eco.maxBanked - state.tickets;
+    var naturalRoom = eco.naturalDailyCap - state.naturalGranted;
     var dailyRoom = eco.dailyCap - state.dailyGranted;
-    var gain = Math.max(0, Math.min(units, room, dailyRoom));
+    var gain = Math.max(0, Math.min(units, room, naturalRoom, dailyRoom));
     state.tickets += gain;
+    state.naturalGranted += gain;
     state.dailyGranted += gain;
     state.lastTickAt += units * per;
     return true;
   }
 
-  // 距下一抽还有多少毫秒；存满或当天发满时返回 0
+  /* 任务奖励发抽：单独计 taskGranted（日上限 taskDailyCap=13），
+   * 与自然恢复共用 90 总上限、共用存量 30 上限。
+   * 返回实际发出张数（0 表示任务额度/总上限/存量已满）。任务系统接上后从任务页调用。 */
+  function grantTask(state, n) {
+    var eco = cfg.ECONOMY;
+    n = Math.floor(Number(n));
+    if (!isFinite(n) || n <= 0) return 0;
+    var room = Math.min(eco.maxBanked - state.tickets,
+      eco.taskDailyCap - state.taskGranted,
+      eco.dailyCap - state.dailyGranted);
+    var gain = Math.max(0, Math.min(n, room));
+    state.tickets += gain;
+    state.taskGranted += gain;
+    state.dailyGranted += gain;
+    return gain;
+  }
+
+  // 距下一抽还有多少毫秒；存满、自然恢复发满或当天总发满时返回 0
   function msToNext(state, now) {
     var eco = cfg.ECONOMY;
     var per = eco.minutesPerTicket * 60000;
     if (state.tickets >= eco.maxBanked) return 0;
+    if (state.naturalGranted >= eco.naturalDailyCap) return 0;
     if (state.dailyGranted >= eco.dailyCap) return 0;
     var elapsed = Math.max(0, now - state.lastTickAt);
     return Math.max(0, per - (elapsed % per));
@@ -227,6 +277,7 @@
     load: load,
     save: save,
     accrue: accrue,
+    grantTask: grantTask,
     msToNext: msToNext,
     reset: reset
   };
