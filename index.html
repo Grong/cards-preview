@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C1418">
+<meta name="robots" content="noindex, nofollow">
+<title>预览版 · 景点卡牌</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand"><span class="logo">◆</span><span class="name" id="brandName">预览版</span></div>
+    <div class="ticket" id="ticketBox">
+      <b id="ticketCount">0</b><span class="ticket-unit">抽</span>
+      <span class="ticket-next" id="ticketNext"></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- 抽卡 -->
+    <section class="screen" id="drawView">
+      <p class="lede">抽一张世界地标，收进你的卡册。</p>
+      <div class="stage">
+        <div class="card-back" id="cardBack" aria-hidden="true">
+          <span class="back-mark">◆</span>
+        </div>
+      </div>
+      <div class="draw-foot">
+        <button class="btn primary" id="drawBtn" type="button">抽一张</button>
+        <p class="hint" id="drawHint">每 5 分钟 +1 抽 · 未领取最多 30</p>
+        <p class="daily" id="dailyLine"></p>
+      </div>
+      <ul class="legend" id="rarityLegend" aria-label="抽取概率"></ul>
+      <button class="linkbtn" id="rateBtn" type="button">概率与保底</button>
+      <p class="health">抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。适度游戏益脑，沉迷游戏伤身。合理安排时间，享受健康生活。</p>
+    </section>
+
+    <!-- 图鉴 -->
+    <section class="screen" id="dexView" hidden>
+      <div class="dex-head">
+        <h2>图鉴</h2>
+        <p class="dex-count" id="dexCount">已收集 0 / 48</p>
+      </div>
+      <div class="filters" id="filters" role="tablist" aria-label="按稀有度筛选"></div>
+      <div class="regions" id="regions"></div>
+      <p class="dex-empty" id="dexEmpty" hidden>这一类还没有卡，去抽一张。</p>
+      <button class="linkbtn" id="exportBtn" type="button">复制测试日志</button>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab is-active" id="tabDraw" data-view="draw" type="button">抽卡</button>
+    <button class="tab" id="tabDex" data-view="dex" type="button">图鉴</button>
+  </nav>
+
+  <span class="watermark" aria-hidden="true">预览版</span>
+</div>
+
+<!-- 抽卡结果 -->
+<div class="overlay" id="revealOverlay" hidden>
+  <div class="reveal" id="reveal" role="dialog" aria-modal="true" aria-label="抽卡结果">
+    <p class="reveal-kicker" id="revealKicker">新卡入册</p>
+    <div class="reveal-card-wrap" id="revealCardWrap"></div>
+    <p class="reveal-rarity" id="revealRarity"></p>
+    <div class="reveal-actions">
+      <button class="btn ghost" id="revealDex" type="button">看图鉴</button>
+      <button class="btn primary" id="revealAgain" type="button">再抽一张</button>
+    </div>
+  </div>
+</div>
+
+<!-- 卡牌详情 -->
+<div class="overlay sheet" id="detailOverlay" hidden>
+  <div class="detail" id="detail" role="dialog" aria-modal="true" aria-label="卡牌详情">
+    <div class="handle" aria-hidden="true"></div>
+    <div class="detail-body" id="detailBody"></div>
+    <button class="btn ghost" id="detailClose" type="button">关闭</button>
+  </div>
+</div>
+
+<!-- 概率与保底 -->
+<div class="overlay sheet" id="rateOverlay" hidden>
+  <div class="detail" id="rateSheet" role="dialog" aria-modal="true" aria-label="概率与保底">
+    <div class="handle" aria-hidden="true"></div>
+    <h2 class="sheet-title">抽取概率与保底</h2>
+    <div class="rate-body" id="rateBody"></div>
+    <button class="btn ghost" id="rateClose" type="button">关闭</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/rng.js"></script>
+<script src="js/store.js"></script>
+<script src="js/track.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
