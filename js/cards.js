@@ -120,7 +120,7 @@
   ];
 
   var all = [];
-  /* 首版只启用 ACTIVE_REGIONS 里的地区（默认 4 个 = 36 张目标）；
+  /* 首版只启用 ACTIVE_REGIONS 里的地区（默认 4 个 × 9 = 36，上线分母锁在 config.POOL_SIZE）；
    * 其余地区的数据留在 ALL_REGIONS 里，扩地区时改 config 一处即可。 */
   var activeIds = (LC.Config.ACTIVE_REGIONS && LC.Config.ACTIVE_REGIONS.length)
     ? LC.Config.ACTIVE_REGIONS : null;
@@ -129,9 +129,24 @@
     : REGIONS;
   activeRegions.forEach(function (r) { r.cards.forEach(function (c) { c.region = r.id; all.push(c); }); });
 
-  // 卡池目标张数：地区数 × 9（首版 4 地区=36，扩张到 8 地区=72，不写死）
+  // 每地区满编 9 张；上线分母硬锁 config.POOL_SIZE（36），不随当前池内卡数变。
   var REGION_TARGET = 9;
-  var POOL_TARGET = activeRegions.length * REGION_TARGET;
+  var POOL_TARGET = LC.Config.POOL_SIZE;
+  var MIX = LC.Config.REGION_MIX;
+  // 锁定的档位分母：普通 / 稀有 / 传说各多少张（4 地区 → 24 / 8 / 4）
+  var TIER_TARGET = {
+    common: activeRegions.length * MIX.common,
+    rare: activeRegions.length * MIX.rare,
+    legend: activeRegions.length * MIX.legend
+  };
+  if (activeRegions.length * REGION_TARGET !== POOL_TARGET && typeof console !== 'undefined') {
+    console.warn('[cards] 启用地区 ' + activeRegions.length + ' 个 × ' + REGION_TARGET +
+      ' ≠ 上线分母 ' + POOL_TARGET + '：降级或扩池要连 config 一起改，release-check 会失败。');
+  }
+  if (MIX.common + MIX.rare + MIX.legend !== REGION_TARGET && typeof console !== 'undefined') {
+    console.warn('[cards] REGION_MIX 合计 ' + (MIX.common + MIX.rare + MIX.legend) +
+      ' ≠ 每地区 ' + REGION_TARGET + ' 张');
+  }
   var legendTotal = all.filter(function (c) { return c.rarity === 'legend'; }).length;
   // 三条棱彩条件：3 个地区 / 全部传说 / 图鉴 100%（按启用地区数现算）
   PRISM[0].unlock = '集齐任意 3 个地区';
@@ -147,5 +162,6 @@
   LC.PrismCards = PRISM;        // 成就限定
   LC.AllCards = all.concat(PRISM);
   LC.REGION_TARGET = REGION_TARGET;  // 每地区满编 9 张
-  LC.POOL_TARGET = POOL_TARGET;      // 可抽池目标（启用地区数 × 9）
+  LC.POOL_TARGET = POOL_TARGET;      // 上线分母（硬锁，config.POOL_SIZE）
+  LC.TIER_TARGET = TIER_TARGET;      // 各档锁定分母：普通/稀有/传说
 })(typeof window !== 'undefined' ? window : globalThis);

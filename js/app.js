@@ -144,7 +144,7 @@
 
   /* ---------- 图鉴 ---------- */
   function renderFilters() {
-    var total = LC.Cards.length;
+    var total = LC.POOL_TARGET;            // 分母硬锁 36，不随池内卡数变（进度不倒退）
     var ownedTotal = 0;
     LC.Cards.forEach(function (c) { if (state.owned[c.id]) ownedTotal++; });
     el.dexCount.textContent = '已收集 ' + ownedTotal + ' / ' + total;
@@ -155,7 +155,7 @@
     var html = '<button class="chip' + (filter === 'all' ? ' is-on' : '') + '" data-filter="all" type="button">全部 ' + total + '</button>';
     cfg.RARITY.forEach(function (r) {
       if (r.weight <= 0) return; // 棱彩不进池，不参与筛选
-      var n = LC.Cards.filter(function (c) { return c.rarity === r.key; }).length;
+      var n = LC.TIER_TARGET[r.key];       // 各档锁定分母（6/2/1 × 地区数）
       html += '<button class="chip' + (filter === r.key ? ' is-on' : '') + '" data-filter="' + r.key +
         '" type="button">' + r.label + ' ' + (counts[r.key] || 0) + '/' + n + '</button>';
     });
@@ -182,11 +182,9 @@
       if (!cards.length) return;
       shown += cards.length;
       var owned = region.cards.filter(function (c) { return state.owned[c.id]; }).length;
-      var pending = 9 - region.cards.length;
       html += '<section class="region">' +
         '<div class="region-head"><h3>' + region.name + '</h3>' +
-        '<span class="region-count">' + owned + ' / ' + region.cards.length + '</span>' +
-        (pending > 0 ? '<span class="region-todo">待补 ' + pending + ' 张</span>' : '') +
+        '<span class="region-count">' + owned + ' / ' + LC.REGION_TARGET + '</span>' +
         '</div><div class="grid">' + cards.map(cellHtml).join('') + '</div></section>';
     });
     return { html: html, shown: shown };
@@ -218,8 +216,8 @@
     var r = rarityOf(card.rarity);
     var src = card.source && card.source.pageUrl
       ? '<a class="src" href="' + card.source.pageUrl + '" target="_blank" rel="noopener">' +
-        '原页面 · ' + (card.source.author || '作者待补') + ' · ' + card.source.license + '</a>'
-      : '<span class="src">出处待接入：上线前每张卡都要有 pageUrl / author / license / imageUrl。</span>';
+        '原页面 · ' + (card.source.author || '未署名') + ' · ' + card.source.license + '</a>'
+      : '<span class="src">出处未接入：上线前每张卡都要有 pageUrl / author / license / imageUrl。</span>';
     el.detailBody.innerHTML =
       cardHtml(card, 'big') +
       '<p class="blurb">' + card.blurb + '</p>' +
@@ -256,9 +254,9 @@
       '<p class="rate-line"><b>含保底综合出率</b>（10 万抽实测，验收按这一行）：</p>' +
       '<ul class="rate-list compact">' + pityLines + '</ul>' +
       '<p class="rate-line muted">按 10 万次模拟，随已抽次数与保底计数变化。</p>' +
-      '<p class="rate-line">可抽卡池 <b>' + counts.total + '</b> 张（目标 ' + LC.POOL_TARGET + '）；' +
-      '全卡图鉴 ' + (counts.total + LC.PrismCards.length) + ' 张，另 ' + LC.PrismCards.length +
-      ' 张棱彩为成就专属、不在抽取池内。</p>' +
+      '<p class="rate-line">当前卡池 <b>' + counts.total + '</b> 张；' +
+      '图鉴共 ' + (LC.POOL_TARGET + LC.PrismCards.length) + ' 张（含 ' + LC.PrismCards.length +
+      ' 张棱彩，成就专属、不通过抽取获得）。</p>' +
       '<p class="rate-line">棱彩卡不通过抽取获得：集齐任意 3 个地区 / 集齐本季全部 ' + legendTotal +
       ' 张传说 / 图鉴 100%，各解锁一张。</p>' +
       '<p class="rate-line"><b>保底：</b>连续 ' + cfg.PITY.rareAfter + ' 次未获得稀有及以上，第 ' + (cfg.PITY.rareAfter + 1) +
