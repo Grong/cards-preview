@@ -256,7 +256,7 @@
       '<ul class="rate-list compact">' + pityLines + '</ul>' +
       '<p class="rate-line muted">按 10 万次模拟，随已抽次数与保底计数变化。</p>' +
       '<p class="rate-line">当前卡池 <b>' + counts.total + '</b> 张；' +
-      '图鉴共 ' + (LC.POOL_TARGET + LC.PrismCards.length) + ' 张（含 ' + LC.PrismCards.length +
+      '图鉴共 ' + (counts.total + LC.PrismCards.length) + ' 张（含 ' + LC.PrismCards.length +
       ' 张棱彩，成就专属、不通过抽取获得）。</p>' +
       '<p class="rate-line">棱彩卡不通过抽取获得：集齐任意 3 个地区 / 集齐本季全部 ' + legendTotal +
       ' 张传说 / 图鉴 100%，各解锁一张。</p>' +
